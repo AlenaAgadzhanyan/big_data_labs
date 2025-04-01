@@ -1,6 +1,3 @@
-install.packages("rvest")
-options(timeout = 300)
-install.packages("stringi")
 library(stringi)
 library(rvest)
 
@@ -30,203 +27,125 @@ getCountryRow <- function(allData, year, country) {
 allData <- lapply(years, getData) #возвращает список той же длины, что и years, в котором к каждому элементу years была применена функция 
 names(allData) <- years
 
-makeCountriesComparisonDF <- function(allData, countries, dataColumnIndex) {
-  years <- names(allData)
-  countriesDataList <- lapply(countries, function(country) {
-    listDataByYears <- lapply(years, function(year) {  
-      country_row <- getCountryRow(allData, year, country)
-      if (is.null(country_row) || nrow(country_row) == 0) {
-        index_value <- NA
-      } else {
-        index_value <- country_row[1, dataColumnIndex]
-      }
-      
-      df <- data.frame(value = index_value)
-      rownames(df) <- year 
-      colnames(df) <- country
-      return(df)
-    })
-    do.call("rbind", listDataByYears)
-  })
-  do.call("cbind", countriesDataList)
-}
-
-QOLIData <- makeCountriesComparisonDF(allData, countries, 1)
-
-# Вычисляем min и max с обработкой NA
-min_qoli <- min(as.matrix(QOLIData), na.rm = TRUE)
-max_qoli <- max(as.matrix(QOLIData), na.rm = TRUE)
-
-# Проверяем, являются ли min и max конечными, и устанавливаем значения по умолчанию, если нет
-if (!is.finite(min_qoli)) {
-  min_qoli <- 0  # Значение по умолчанию
-}
-if (!is.finite(max_qoli)) {
-  max_qoli <- 100  # Значение по умолчанию
-}
-
-matplot(
-  years,
-  QOLIData,
-  type="b",
-  pch=16,
-  lty=1,
-  lwd=1.8,
-  cex=0.8,
-  col=colors,
-  ylim=c(min_qoli - 5, max_qoli + 100),
-  main='Индекс качества жизни (чем выше, тем лучше)',
-  xlab='Год',
-  ylab='Индекс качества жизни'
-)
-legend('topleft', countries, ncol=3, lty=1, lwd=2, col=colors)
-
-# Второй график (Индекс покупательной способности)
-PPIData <- makeCountriesComparisonDF(allData, countries, 2)
-
-# Вычисляем диапазон для PPIData
-ppi_range <- range(as.matrix(PPIData), na.rm = TRUE)
-
-# Проверяем, являются ли значения конечными, и устанавливаем значения по умолчанию, если нет
-if (!all(is.finite(ppi_range))) {
-  min_ppi <- 0  # Значение по умолчанию
-  max_ppi <- 200  # Значение по умолчанию (увеличено)
-  ppi_range <- c(min_ppi, max_ppi)  # Устанавливаем диапазон вручную
-}
-
-# Расширяем диапазон на 10% (можно изменить этот процент)
-range_extension <- 0.1 * diff(ppi_range)
-min_ppi <- ppi_range[1] - range_extension
-max_ppi <- ppi_range[2] + range_extension
-
-matplot(
-  years,
-  PPIData,
-  type="b",
-  pch=16,
-  lty=1,
-  lwd=1.8,
-  cex=0.8,
-  col=colors,
-  ylim=c(min_ppi, max_ppi),  # Используем вычисленные min_ppi и max_ppi
-  main='Индекс покупательной способности (чем выше, тем лучше)',
-  xlab='Год',
-  ylab='Индекс покупательной способности'
-)
-legend('topleft', countries, ncol=3, cex=0.5, lty=1, lwd=2, col=colors)
-
-SIData <- makeCountriesComparisonDF(allData, countries, 3)
-matplot(
-  years,
-  SIData,
-  type="b",
-  pch=16,
-  lty=1,
-  lwd=1.8,
-  cex=0.8,
-  col=colors,
-  ylim=c(min_ppi, max_ppi),  # Используем вычисленные min_ppi и max_ppi
-  main='Индекс безопасности (чем выше, тем лучше)',
-  xlab='Год', 
-  ylab='Индекс безопасности'
-)
-legend('topleft', countries, ncol=3, lty=1, lwd=2, col=colors)
-
-HCIData <- makeCountriesComparisonDF(allData, countries, 4)
-matplot(
-  years,
-  HCIData,
-  type="b",
-  pch=16,
-  lty=1,
-  lwd=1.8,
-  cex=0.8,
-  col=colors,
-  main='Индекс медицинского обслуживания (чем выше, тем лучше)',
-  xlab='Год', 
-  ylab='Индекс медицинского обслуживания'
-)
-legend('topleft', countries, ncol=3, lty=1, cex = 0.45, lwd=2, col=colors)
-
-
-COLIData <- makeCountriesComparisonDF(allData, countries, 5)
-matplot(
-  years,
-  COLIData,
-  type="b",
-  pch=16,
-  lty=1,
-  lwd=1.8,
-  cex=0.8,
-  col=colors,
-  ylim=c(min_ppi, max_ppi),
-  main='Индекс прожиточного минимума (чем ниже, тем лучше)',
-  xlab='Год', 
-  ylab='Индекс прожиточного минимума'
-)
-legend('topleft', countries, ncol=3, lty=1, cex = 0.6, lwd=2, col=colors)
-
-PPTIRData <- makeCountriesComparisonDF(allData, countries, 6)
-matplot(
-  years,
-  PPTIRData,
-  type="b",
-  pch=16,
-  lty=1,
-  lwd=1.8,
-  cex=0.8,
-  col=colors,
-  main='Отношение цены на жильё к доходу (чем ниже, тем лучше)',
-  xlab='Год', 
-  ylab='Отношение цены на жильё к доходу'
+# Функция для извлечения данных страны за конкретный год
+extractCountryYearData <- function(allData, year, country, dataColumnIndex) {
+  country_row <- getCountryRow(allData, year, country) # Get data row
   
-)
-legend('topleft', countries, ncol=3, lty=1, cex = 0.5, lwd=2, col=colors)
+  if (is.null(country_row) || nrow(country_row) == 0) {
+    index_value <- NA  
+  } else {
+    index_value <- country_row[1, dataColumnIndex] 
+  }
+  
+  df <- data.frame(value = index_value) 
+  rownames(df) <- year 
+  colnames(df) <- country 
+  
+  return(df)
+}
 
-TCTIData <- makeCountriesComparisonDF(allData, countries, 7)
-matplot(
-  years,
-  TCTIData,
-  type="b",
-  pch=16,
-  lty=1,
-  lwd=1.8,
-  cex=0.8,
-  col=colors,
-  main='Индекс времени движения на дороге (чем ниже, тем лучше)',
-  xlab='Год', 
-  ylab='Индекс времени движения на дороге'
-)
-legend('topright', countries, ncol=3, lty=1, lwd=2, col=colors)
+# Функция для создания таблицы данных для одной страны за все годы
+createCountryDataFrame <- function(allData, country, years, dataColumnIndex) {
+  listDataByYears <- lapply(years, function(year) {
+    extractCountryYearData(allData, year, country, dataColumnIndex)  # Apply extraction function
+  })
+  return(do.call("rbind", listDataByYears)) # Combine data frames by rows
+}
 
-PIData <- makeCountriesComparisonDF(allData, countries, 8)
-matplot(
-  years,
-  PIData,
-  type="b",
-  pch=16,
-  lty=1,
-  lwd=1.8,
-  cex=0.8,
-  col=colors,
-  main='Индекс загрязнения (чем ниже, тем лучше)',
-  xlab='Год', 
-  ylab='Индекс загрязнения'
-)
-legend('topright', countries, ncol=3, cex=0.5, lty=1, lwd=2, col=colors)
+# Главная функция для создания таблицы сравнения стран
+makeCountriesComparisonDF <- function(allData, countries, dataColumnIndex) {
+  years <- names(allData) # Get years from data names
+  
+  countriesDataList <- lapply(countries, function(country) {
+    createCountryDataFrame(allData, country, years, dataColumnIndex) # Apply data frame creation function
+  })
+  return(do.call("cbind", countriesDataList))  # Combine data frames by columns
+}
 
-CIData <- makeCountriesComparisonDF(allData, countries, 9)
-matplot(
-  years,
-  CIData,
-  type="b",
-  pch=16,
-  lty=1,
-  lwd=1.8,
-  cex=0.8,
-  col=colors,
-  main='Климатический индекс (чем выше, тем лучше)',
-  xlab='Год', 
-  ylab='Климатический индекс'
+
+plot_data <- list(
+  list(index = 1,  title = 'Индекс качества жизни (чем выше, тем лучше)', ylab = 'Индекс качества жизни', legend_pos = 'topleft', ylim = "auto", cex = 0.5),
+  list(index = 2,  title = 'Индекс покупательной способности (чем выше, тем лучше)', ylab = 'Индекс покупательной способности', legend_pos = 'topleft', ylim = "auto", cex = 0.5),
+  list(index = 3,  title = 'Индекс безопасности (чем выше, тем лучше)', ylab = 'Индекс безопасности', legend_pos = 'topleft', ylim = "ppi", cex = 0.5),
+  list(index = 4,  title = 'Индекс медицинского обслуживания (чем выше, тем лучше)', ylab = 'Индекс медицинского обслуживания', legend_pos = 'topleft', ylim = "auto", cex = 0.45),
+  list(index = 5,  title = 'Индекс прожиточного минимума (чем ниже, тем лучше)', ylab = 'Индекс прожиточного минимума', legend_pos = 'topleft', ylim = "ppi", cex = 0.6),
+  list(index = 6,  title = 'Отношение цены на жильё к доходу (чем ниже, тем лучше)', ylab = 'Отношение цены на жильё к доходу', legend_pos = 'topleft', ylim = "auto", cex = 0.5),
+  list(index = 7,  title = 'Индекс времени движения на дороге (чем ниже, тем лучше)', ylab = 'Индекс времени движения на дороге', legend_pos = 'topright', ylim = "auto", cex = 0.5),
+  list(index = 8,  title = 'Индекс загрязнения (чем ниже, тем лучше)', ylab = 'Индекс загрязнения', legend_pos = 'topright', ylim = "auto", cex = 0.5),
+  list(index = 9,  title = 'Климатический индекс (чем выше, тем лучше)', ylab = 'Климатический индекс', legend_pos = 'topleft', ylim = "auto", cex = 0.5)
 )
-legend('topleft', countries, ncol=3, cex=0.5, lty=1, lwd=2, col=colors)
+
+
+# Функция для вычисления пределов ylim, обрабатывающая NA и бесконечные значения
+calculate_ylim <- function(data, type = "auto", default_min = 0, default_max = 100) {
+  data_matrix <- as.matrix(data)
+  data_range <- range(data_matrix, na.rm = TRUE)
+  min_val <- data_range[1]
+  max_val <- data_range[2]
+  
+  if (!all(is.finite(data_range))) {
+    min_val <- default_min
+    max_val <- default_max
+  }
+  
+  if (type == "auto") {
+    # Разумные границы для обычных случаев
+    min_val <- min_val - 0.05 * abs(min_val)  # 5% ниже минимального значения
+    max_val <- max_val + 0.1 * abs(max_val)   # 10% выше максимального значения
+  }
+  
+  return(c(min_val, max_val))
+}
+
+for (i in seq_along(plot_data)) {
+  data_index <- plot_data[[i]]$index
+  plot_title <- plot_data[[i]]$title
+  plot_ylab <- plot_data[[i]]$ylab
+  legend_position <- plot_data[[i]]$legend_pos
+  ylim_type <- plot_data[[i]]$ylim
+  legend_cex <- plot_data[[i]]$cex
+  
+  data <- makeCountriesComparisonDF(allData, countries, data_index)
+  
+  # Вычисляем ylim
+  if (ylim_type == "auto") {
+    ylim <- calculate_ylim(data, type = "auto")
+  } else if (ylim_type == "ppi") {
+    
+    if (!exists("min_ppi") || !exists("max_ppi")) {
+      PPIData <- makeCountriesComparisonDF(allData, countries, 2)  
+      ppi_range <- range(as.matrix(PPIData), na.rm = TRUE)
+      
+      if (!all(is.finite(ppi_range))) {
+        min_ppi <- 0  
+        max_ppi <- 200  
+        ppi_range <- c(min_ppi, max_ppi)  
+      }
+      range_extension <- 0.1 * diff(ppi_range)
+      min_ppi <- ppi_range[1] - range_extension
+      max_ppi <- ppi_range[2] + range_extension
+    }
+    ylim <- c(min_ppi, max_ppi)
+  } else {
+   
+    ylim <- calculate_ylim(data, type="auto") 
+  }
+  
+  
+  matplot(
+    years,
+    data,
+    type = "b",
+    pch = 16,
+    lty = 1,
+    lwd = 1.8,
+    cex = 0.8,
+    col = colors,
+    ylim = ylim,
+    main = plot_title,
+    xlab = 'Год',
+    ylab = plot_ylab
+  )
+  
+  legend(legend_position, countries, ncol = 3, cex = legend_cex, lty = 1, lwd = 2, col = colors)
+}
