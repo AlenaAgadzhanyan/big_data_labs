@@ -1,3 +1,5 @@
+library(car)
+
 dataset <- read.csv('D:/Универ/3 курс/6 семестр/Бигдата/Athlet_Events/athlete_events.csv')
 hockey_players <- dataset[dataset$Sport == "Ice Hockey" & !is.na(dataset$Weight), c("Name", "Sex", "Weight", "Sport")]
 hockey_players <- unique(hockey_players)
@@ -58,6 +60,7 @@ print(shapiro_test_result)
 hist(hockey_players$Weight)
 qqnorm(hockey_players$Weight)  
 qqline(hockey_players$Weight)
+qqPlot(hockey_players$Weight)
 
 # Вывод о нормальности
 alpha <- 0.05 # Уровень значимости
@@ -66,6 +69,11 @@ if (shapiro_test_result$p.value > alpha) {
 } else {
   print("Вывод: Распределение веса, вероятно, не нормально (тест Шапиро-Уилка отвергает гипотезу о нормальности).")
 }
+
+df<-hockey_players[,c("Sex", "Weight")]
+df$Sex<-as.factor(df$Sex)
+df<-na.omit(df)
+leveneTest(Weight ~ Sex, data = df)
 
 # Тест Уискоксона
 wilcox.test(hockey_players$Weight, mu=81, conf.int=TRUE)
